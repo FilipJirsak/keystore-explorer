@@ -65,6 +65,8 @@ public class DDistinguishedNameChooser extends JEscDialog {
 
 	private static final String CANCEL_KEY = "CANCEL_KEY";
 
+	private JLabel jlSerialNumber;
+	private JTextField jtfSerialNumber;
 	private JLabel jlCommonName;
 	private JTextField jtfCommonName;
 	private JLabel jlOrganisationUnit;
@@ -205,6 +207,15 @@ public class DDistinguishedNameChooser extends JEscDialog {
 		GridBagConstraints gbc_jtfEmailAddress = (GridBagConstraints) gbcCtrl.clone();
 		gbc_jtfEmailAddress.gridy = 6;
 
+		jlSerialNumber = new JLabel(res.getString("DDistinguishedNameChooser.jlSerialNumber.text"));
+		GridBagConstraints gbc_jlSerialNumber = (GridBagConstraints) gbcLbl.clone();
+		gbc_jlSerialNumber.gridy = 7;
+
+		jtfSerialNumber = new JTextField(25);
+		jtfSerialNumber.setEditable(editable);
+		GridBagConstraints gbc_jtfSerialNumber = (GridBagConstraints) gbcCtrl.clone();
+		gbc_jtfSerialNumber.gridy = 7;
+
 		jpDistinguishedName = new JPanel(new GridBagLayout());
 		jpDistinguishedName.setBorder(new CompoundBorder(new EmptyBorder(5, 5, 5, 5), new EtchedBorder()));
 
@@ -222,6 +233,8 @@ public class DDistinguishedNameChooser extends JEscDialog {
 		jpDistinguishedName.add(jtfCountryCode, gbc_jtfCountryCode);
 		jpDistinguishedName.add(jlEmailAddress, gbc_jlEmailAddress);
 		jpDistinguishedName.add(jtfEmailAddress, gbc_jtfEmailAddress);
+		jpDistinguishedName.add(jlSerialNumber, gbc_jlSerialNumber);
+		jpDistinguishedName.add(jtfSerialNumber, gbc_jtfSerialNumber);
 
 		populate();
 
@@ -234,6 +247,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 		});
 
 		if (editable) {
+			jtfSerialNumber.setToolTipText(res.getString("DDistinguishedNameChooser.jtfSerialNumber.edit.tooltip"));
 			jtfCommonName.setToolTipText(res.getString("DDistinguishedNameChooser.jtfCommonName.edit.tooltip"));
 			jtfOrganisationUnit.setToolTipText(res
 					.getString("DDistinguishedNameChooser.jtfOrganisationUnit.edit.tooltip"));
@@ -262,6 +276,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 
 			jpButtons = PlatformUtil.createDialogButtonPanel(jbOK, jbCancel, false);
 		} else {
+			jtfSerialNumber.setToolTipText(res.getString("DDistinguishedNameChooser.jtfSerialNumber.view.tooltip"));
 			jtfCommonName.setToolTipText(res.getString("DDistinguishedNameChooser.jtfCommonName.view.tooltip"));
 			jtfOrganisationUnit.setToolTipText(res
 					.getString("DDistinguishedNameChooser.jtfOrganisationUnit.view.tooltip"));
@@ -296,6 +311,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 	private void populate() {
 
 		if (distinguishedName != null) {
+			populateRdnField(distinguishedName, jtfSerialNumber, BCStyle.SERIALNUMBER);
 			populateRdnField(distinguishedName, jtfCommonName, BCStyle.CN);
 			populateRdnField(distinguishedName, jtfOrganisationUnit, BCStyle.OU);
 			populateRdnField(distinguishedName, jtfOrganisationName, BCStyle.O);
@@ -309,6 +325,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 			String defaultDN = applicationSettings.getDefaultDN();
 			if (!StringUtils.isBlank(defaultDN)) {
 				X500Name defaultX500Name = new X500Name(KseX500NameStyle.INSTANCE, defaultDN);
+				populateRdnField(defaultX500Name, jtfSerialNumber, BCStyle.SERIALNUMBER);
 				populateRdnField(defaultX500Name, jtfCommonName, BCStyle.CN);
 				populateRdnField(defaultX500Name, jtfOrganisationUnit, BCStyle.OU);
 				populateRdnField(defaultX500Name, jtfOrganisationName, BCStyle.O);
@@ -336,6 +353,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 
 	private void okPressed() {
 		if (editable) {
+			String serialNumber = StringUtils.trimAndConvertEmptyToNull(jtfSerialNumber.getText());
 			String commonName = StringUtils.trimAndConvertEmptyToNull(jtfCommonName.getText());
 			String organisationUnit = StringUtils.trimAndConvertEmptyToNull(jtfOrganisationUnit.getText());
 			String organisationName = StringUtils.trimAndConvertEmptyToNull(jtfOrganisationName.getText());
@@ -344,7 +362,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 			String countryCode = StringUtils.trimAndConvertEmptyToNull(jtfCountryCode.getText());
 			String emailAddress = StringUtils.trimAndConvertEmptyToNull(jtfEmailAddress.getText());
 
-			if ((commonName == null) && (organisationUnit == null) && (organisationName == null)
+			if ((serialNumber == null) && (commonName == null) && (organisationUnit == null) && (organisationName == null)
 					&& (localityName == null) && (stateName == null) && (countryCode == null) && (emailAddress == null)) {
 				JOptionPane.showMessageDialog(this,
 						res.getString("DDistinguishedNameChooser.ValueReqAtLeastOneField.message"), getTitle(),
@@ -359,7 +377,7 @@ public class DDistinguishedNameChooser extends JEscDialog {
 				return;
 			}
 
-			distinguishedName = X500NameUtils.buildX500Name(commonName, organisationUnit, organisationName,
+			distinguishedName = X500NameUtils.buildX500Name(serialNumber, commonName, organisationUnit, organisationName,
 					localityName, stateName, countryCode, emailAddress);
 		}
 

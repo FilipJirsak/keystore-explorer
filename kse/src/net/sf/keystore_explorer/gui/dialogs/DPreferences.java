@@ -142,6 +142,8 @@ public class DPreferences extends JEscDialog {
 	private JButton jbCancel;
 
 	private JPanel jpDefaultName;
+	private JLabel jlSerialNumber;
+	private JTextField jtfSerialNumber;
 	private JLabel jlCommonName;
 	private JTextField jtfCommonName;
 	private JLabel jlOrganisationUnit;
@@ -767,6 +769,8 @@ public class DPreferences extends JEscDialog {
 		jtfCountryCode = new JTextField(4);
 		jlEmailAddress = new JLabel(res.getString("DPreferences.jlEmailAddress.text"));
 		jtfEmailAddress = new JTextField(30);
+		jlSerialNumber = new JLabel(res.getString("DPreferences.jlSerialNumber.text"));
+		jtfSerialNumber = new JTextField(25);
 
 		// layout
 		jpDefaultName = new JPanel();
@@ -785,6 +789,8 @@ public class DPreferences extends JEscDialog {
 		jpDefaultName.add(jtfCountryCode, "gap rel, wrap unrel");
 		jpDefaultName.add(jlEmailAddress, "");
 		jpDefaultName.add(jtfEmailAddress, "gap rel, wrap unrel");
+		jpDefaultName.add(jlSerialNumber, "");
+		jpDefaultName.add(jtfSerialNumber, "gap rel, wrap unrel");
 
 		// populate fields with content from saved preferences
 		if (defaultDN != null) {
@@ -797,6 +803,7 @@ public class DPreferences extends JEscDialog {
 				populateRdnField(x500Name, jtfStateName, BCStyle.ST);
 				populateRdnField(x500Name, jtfCountryCode, BCStyle.C);
 				populateRdnField(x500Name, jtfEmailAddress, BCStyle.E);
+				populateRdnField(x500Name, jtfSerialNumber, BCStyle.SERIALNUMBER);
 			} catch (Exception e) {
 				// reset invalid DN by leaving fields empty
 			}
@@ -868,6 +875,7 @@ public class DPreferences extends JEscDialog {
 	}
 
 	private boolean storeDefaultDN() {
+		String serialNumber = StringUtils.trimAndConvertEmptyToNull(jtfSerialNumber.getText());
 		String commonName = StringUtils.trimAndConvertEmptyToNull(jtfCommonName.getText());
 		String organisationUnit = StringUtils.trimAndConvertEmptyToNull(jtfOrganisationUnit.getText());
 		String organisationName = StringUtils.trimAndConvertEmptyToNull(jtfOrganisationName.getText());
@@ -876,7 +884,7 @@ public class DPreferences extends JEscDialog {
 		String countryCode = StringUtils.trimAndConvertEmptyToNull(jtfCountryCode.getText());
 		String emailAddress = StringUtils.trimAndConvertEmptyToNull(jtfEmailAddress.getText());
 
-		defaultDN = X500NameUtils.buildX500Name(commonName, organisationUnit, organisationName,
+		defaultDN = X500NameUtils.buildX500Name(serialNumber, commonName, organisationUnit, organisationName,
 				localityName, stateName, countryCode, emailAddress).toString();
 		return true;
 	}

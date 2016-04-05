@@ -86,6 +86,7 @@ public class X500NameUtils {
 	/**
 	 * Creates an X500Name object from the given components.
 	 *
+	 * @param serialNumber
 	 * @param commonName
 	 * @param organisationUnit
 	 * @param organisationName
@@ -95,7 +96,7 @@ public class X500NameUtils {
 	 * @param emailAddress
 	 * @return X500Name object from the given components
 	 */
-	public static X500Name buildX500Name(String commonName, String organisationUnit, String organisationName,
+	public static X500Name buildX500Name(String serialNumber, String commonName, String organisationUnit, String organisationName,
 			String localityName, String stateName, String countryCode, String emailAddress) {
 
 		X500NameBuilder x500NameBuilder = new X500NameBuilder(KseX500NameStyle.INSTANCE);
@@ -120,6 +121,9 @@ public class X500NameUtils {
 		}
 		if (commonName != null) {
 			x500NameBuilder.addRDN(BCStyle.CN, commonName);
+		}
+		if (serialNumber != null) {
+			x500NameBuilder.addRDN(BCStyle.SERIALNUMBER, serialNumber);
 		}
 
 		return x500NameBuilder.build();
