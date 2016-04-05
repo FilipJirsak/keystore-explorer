@@ -48,13 +48,7 @@ import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.UIManager;
 
-import org.bouncycastle.asn1.ASN1EncodableVector;
-import org.bouncycastle.asn1.ASN1ObjectIdentifier;
-import org.bouncycastle.asn1.ASN1OctetString;
-import org.bouncycastle.asn1.DERIA5String;
-import org.bouncycastle.asn1.DERSequence;
-import org.bouncycastle.asn1.DERTaggedObject;
-import org.bouncycastle.asn1.DERUTF8String;
+import org.bouncycastle.asn1.*;
 import org.bouncycastle.asn1.x500.X500Name;
 import org.bouncycastle.asn1.x509.GeneralName;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -86,6 +80,7 @@ public class DGeneralNameChooser extends JEscDialog {
 	private JRadioButton jrbRfc822Name;
 	private JRadioButton jrbUniformResourceIdentifier;
 	private JRadioButton jrbPrincipalName;
+	private JRadioButton jrbOtherName;
 	private JPanel jpGeneralNameValue;
 	private JLabel jlGeneralNameValue;
 	private JDistinguishedName jdnDirectoryName;
@@ -95,6 +90,9 @@ public class DGeneralNameChooser extends JEscDialog {
 	private JTextField jtfRfc822Name;
 	private JTextField jtfUniformResourceIdentifier;
 	private JTextField jtfPrincipalName;
+	private JLabel jlOtherNameTypeId;
+	private JObjectId joiOtherNameTypeId;
+	private JTextField jtfOtherNameValue;
 	private JPanel jpButtons;
 	private JButton jbOK;
 	private JButton jbCancel;
@@ -156,6 +154,9 @@ public class DGeneralNameChooser extends JEscDialog {
 		jrbPrincipalName = new JRadioButton(res.getString("DGeneralNameChooser.jrbPrincipalName.text"));
 		jrbPrincipalName.setToolTipText(res.getString("DGeneralNameChooser.jrbPrincipalName.tooltip"));
 
+		jrbOtherName = new JRadioButton(res.getString("DGeneralNameChooser.jrbOtherName.text"));
+		jrbOtherName.setToolTipText(res.getString("DGeneralNameChooser.jrbOtherName.tooltip"));
+
 		ButtonGroup bgGeneralName = new ButtonGroup();
 		bgGeneralName.add(jrbDirectoryName);
 		bgGeneralName.add(jrbDnsName);
@@ -164,9 +165,11 @@ public class DGeneralNameChooser extends JEscDialog {
 		bgGeneralName.add(jrbRfc822Name);
 		bgGeneralName.add(jrbUniformResourceIdentifier);
 		bgGeneralName.add(jrbPrincipalName);
+		bgGeneralName.add(jrbOtherName);
 
 		jlGeneralNameType = new JLabel(res.getString("DGeneralNameChooser.jlGeneralNameType.text"));
 		jlGeneralNameValue = new JLabel(res.getString("DGeneralNameChooser.jlGeneralNameValue.text"));
+		jlOtherNameTypeId = new JLabel(res.getString("DGeneralNameChooser.jlOtherNameTypeId.text"));
 		jpGeneralNameValue = new JPanel(new FlowLayout(FlowLayout.LEFT));
 
 		jdnDirectoryName = new JDistinguishedName(res.getString("DGeneralNameChooser.DirectoryName.Title"), 20, true);
@@ -176,6 +179,8 @@ public class DGeneralNameChooser extends JEscDialog {
 		jtfRfc822Name = new JTextField(30);
 		jtfUniformResourceIdentifier = new JTextField(30);
 		jtfPrincipalName = new JTextField(30);
+		joiOtherNameTypeId = new JObjectId(res.getString("DGeneralNameChooser.OtherName.TypeId.Title"));
+		jtfOtherNameValue = new JTextField(30);
 
 		jbOK = new JButton(res.getString("DGeneralNameChooser.jbOK.text"));
 		jbCancel = new JButton(res.getString("DGeneralNameChooser.jbCancel.text"));
@@ -192,7 +197,10 @@ public class DGeneralNameChooser extends JEscDialog {
 		pane.add(jrbRegisteredId, "wrap");
 		pane.add(jrbRfc822Name, "");
 		pane.add(jrbUniformResourceIdentifier, "");
-		pane.add(jrbPrincipalName, "wrap");
+		pane.add(jrbPrincipalName, "");
+		pane.add(jrbOtherName, "wrap");
+		pane.add(jlOtherNameTypeId, "");
+		pane.add(joiOtherNameTypeId, "spanx, wrap");
 		pane.add(jlGeneralNameValue, "spanx");
 		pane.add(jpGeneralNameValue, "spanx, wrap");
 		pane.add(new JSeparator(), "spanx, growx, wrap para");
@@ -236,6 +244,12 @@ public class DGeneralNameChooser extends JEscDialog {
 			}
 		});
 		jrbPrincipalName.addItemListener(new ItemListener() {
+			@Override
+			public void itemStateChanged(ItemEvent evt) {
+				generalNameTypeChanged();
+			}
+		});
+		jrbOtherName.addItemListener(new ItemListener() {
 			@Override
 			public void itemStateChanged(ItemEvent evt) {
 				generalNameTypeChanged();
@@ -288,6 +302,8 @@ public class DGeneralNameChooser extends JEscDialog {
 			jpGeneralNameValue.add(jtfUniformResourceIdentifier);
 		}  else if (jrbPrincipalName.isSelected()) {
 			jpGeneralNameValue.add(jtfPrincipalName);
+		}  else if (jrbOtherName.isSelected()) {
+			jpGeneralNameValue.add(jtfOtherNameValue);
 		}
 
 		pack();
@@ -334,9 +350,18 @@ public class DGeneralNameChooser extends JEscDialog {
 				break;
 			}
 			case GeneralName.otherName: {
-				jrbPrincipalName.setSelected(true);
-				// we currently only support UPN in otherName
-				jtfPrincipalName.setText(GeneralNameUtil.parseUPN(generalName));
+				ASN1Sequence otherName = (ASN1Sequence) generalName.getName();
+				if (GeneralNameUtil.isUPN(otherName)) {
+					jrbPrincipalName.setSelected(true);
+					jtfPrincipalName.setText(GeneralNameUtil.parseUPN(generalName));
+				} else {
+					jrbOtherName.setSelected(true);
+					joiOtherNameTypeId.setObjectId((ASN1ObjectIdentifier) otherName.getObjectAt(0));
+					//TODO
+					DERTaggedObject derTaggedObject = (DERTaggedObject) otherName.getObjectAt(1);
+					DERUTF8String value = DERUTF8String.getInstance(derTaggedObject.getObject());
+					jtfOtherNameValue.setText(value.getString());
+				}
 				break;
 			}
 			}
@@ -441,6 +466,21 @@ public class DGeneralNameChooser extends JEscDialog {
 				ASN1EncodableVector asn1Vector = new ASN1EncodableVector();
 				asn1Vector.add(new ASN1ObjectIdentifier(GeneralNameUtil.UPN_OID));
 				asn1Vector.add(new DERTaggedObject(true, 0, new DERUTF8String(upnString)));
+
+				newGeneralName = new GeneralName(GeneralName.otherName, new DERSequence(asn1Vector));
+			} else if (jrbOtherName.isSelected()) {
+				String value = jtfOtherNameValue.getText().trim();
+				//TODO FJ
+				if (value.length() == 0) {
+					JOptionPane.showMessageDialog(this,
+							res.getString("DGeneralNameChooser.OtherNameValueReq.message"), getTitle(),
+							JOptionPane.WARNING_MESSAGE);
+					return;
+				}
+
+				ASN1EncodableVector asn1Vector = new ASN1EncodableVector();
+				asn1Vector.add(joiOtherNameTypeId.getObjectId());
+				asn1Vector.add(new DERTaggedObject(true, 0, new DERUTF8String(value)));
 
 				newGeneralName = new GeneralName(GeneralName.otherName, new DERSequence(asn1Vector));
 			}

@@ -153,14 +153,32 @@ public class GeneralNameUtil {
 			return MessageFormat.format(res.getString("GeneralNameUtil.UriGeneralName"), link);
 		}
 		case GeneralName.otherName: {
-			// we currently only support UPN in otherName
-			String upn = parseUPN(generalName);
-			return MessageFormat.format(res.getString("GeneralNameUtil.OtherGeneralName"), "UPN", upn);
+			ASN1Sequence otherName = (ASN1Sequence) generalName.getName();
+			if (isUPN(otherName)) {
+				String upn = parseUPN(generalName);
+				return MessageFormat.format(res.getString("GeneralNameUtil.OtherGeneralName"), "UPN", upn);
+			} else {
+				DERTaggedObject derTaggedObject = (DERTaggedObject) otherName.getObjectAt(1);
+				//TODO FJ
+				DERUTF8String value = DERUTF8String.getInstance(derTaggedObject.getObject());
+				return value.getString();
+			}
 		}
 		default: {
 			return "";
 		}
 		}
+	}
+
+	/**
+	 * Check if otherName i s UPN
+	 *
+	 * @param otherName otherName object
+	 * @return true if otherName is UPN
+	 */
+	public static boolean isUPN(ASN1Sequence otherName) {
+		ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) otherName.getObjectAt(0);
+		return UPN_OID.equals(oid.getId());
 	}
 
 	/**
@@ -175,15 +193,15 @@ public class GeneralNameUtil {
 		//    value [0] EXPLICIT ANY DEFINED BY type-id }
 
 		ASN1Sequence otherName = (ASN1Sequence) generalName.getName();
-		ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) otherName.getObjectAt(0);
 
-		if (UPN_OID.equals(oid.getId())) {
+		if (isUPN(otherName)) {
 			DERTaggedObject derTaggedObject = (DERTaggedObject) otherName.getObjectAt(1);
 			DERUTF8String upn = DERUTF8String.getInstance(derTaggedObject.getObject());
 			return MessageFormat.format(res.getString("GeneralNameUtil.OtherGeneralName"), "UPN", upn.getString());
 		}
 
 		// fallback to generic handling
+		ASN1ObjectIdentifier oid = (ASN1ObjectIdentifier) otherName.getObjectAt(0);
 		ASN1Encodable value = otherName.getObjectAt(1);
 		try {
 			return MessageFormat.format(res.getString("GeneralNameUtil.OtherGeneralName"),
